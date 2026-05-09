@@ -56,6 +56,7 @@ export function VenueCard({
           ? "border-primary shadow-[var(--shadow-glow)]"
           : "border-border hover:border-highlight/60",
         !operational && "opacity-60",
+        venue.suggested && "opacity-70",
       )}
     >
       <StatusOverlay status={venue.operationalStatus} />
@@ -72,11 +73,11 @@ export function VenueCard({
           {venue.rating > 0 ? venue.rating.toFixed(1) : "—"}
         </div>
         {venue.suggested && (
-          <div className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-slate-700/90 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-slate-100 backdrop-blur">
-            <Sparkles className="h-3 w-3" /> Sugerido
+          <div className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-1.5 bg-slate-900/90 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-300 backdrop-blur">
+            <Sparkles className="h-3 w-3" /> Sugerido pela Comunidade (Em Análise)
           </div>
         )}
-        {alertsCount > 0 && (
+        {alertsCount > 0 && !venue.suggested && (
           <div className="absolute bottom-2 left-2 inline-flex items-center gap-1 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-bold text-amber-950">
             ⚠ {alertsCount} alerta{alertsCount > 1 ? "s" : ""}
           </div>
