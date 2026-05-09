@@ -3,7 +3,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { type Venue } from "@/data/venues";
 import { VenueCard } from "./VenueCard";
 import { Button } from "@/components/ui/button";
-import { BeerOff } from "lucide-react";
+import { BeerOff, MapPin } from "lucide-react";
 
 interface Props {
   venues: Venue[];
@@ -11,6 +11,7 @@ interface Props {
   onSelect: (id: string) => void;
   onHover: (id: string | null) => void;
   onClear: () => void;
+  onSuggest: () => void;
   attendanceFor: (id: string) => number;
   liveConfirmationsFor: (id: string) => number;
   alertsCountFor: (id: string) => number;
@@ -23,11 +24,18 @@ export function VenueList({
   onSelect,
   onHover,
   onClear,
+  onSuggest,
   attendanceFor,
   liveConfirmationsFor,
   alertsCountFor,
   distanceFor,
 }: Props) {
+  // Suggested venues always render at the bottom of the list.
+  const ordered = [
+    ...venues.filter((v) => !v.suggested),
+    ...venues.filter((v) => v.suggested),
+  ];
+
   return (
     <ScrollArea className="flex-1">
       <div className="space-y-3 p-4">
@@ -35,7 +43,7 @@ export function VenueList({
           {venues.length} {venues.length === 1 ? "local encontrado" : "locais encontrados"}
         </h2>
         <AnimatePresence mode="popLayout">
-          {venues.length === 0 ? (
+          {ordered.length === 0 ? (
             <motion.div
               key="empty"
               initial={{ opacity: 0, scale: 0.95 }}
@@ -55,7 +63,7 @@ export function VenueList({
               </Button>
             </motion.div>
           ) : (
-            venues.map((v) => (
+            ordered.map((v) => (
               <VenueCard
                 key={v.id}
                 venue={v}
@@ -65,11 +73,21 @@ export function VenueList({
                 attendance={attendanceFor(v.id)}
                 liveConfirmations={liveConfirmationsFor(v.id)}
                 alertsCount={alertsCountFor(v.id)}
+                distanceFor={distanceFor}
                 distanceKm={distanceFor(v.coords)}
               />
             ))
           )}
         </AnimatePresence>
+
+        <button
+          type="button"
+          onClick={onSuggest}
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-surface/40 px-4 py-3 text-sm font-semibold text-muted-foreground transition hover:border-primary/60 hover:text-foreground"
+        >
+          <MapPin className="h-4 w-4 text-primary" />
+          Faltou seu bar favorito? Indique aqui
+        </button>
       </div>
     </ScrollArea>
   );
