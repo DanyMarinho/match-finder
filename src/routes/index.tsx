@@ -115,6 +115,7 @@ function Dashboard() {
       onSelect={handleSelect}
       onHover={f.setHoveredId}
       onClear={f.clear}
+      onSuggest={() => setSuggestOpen(true)}
       attendanceFor={attendance.countFor}
       liveConfirmationsFor={live.countFor}
       alertsCountFor={alertsCountFor}
