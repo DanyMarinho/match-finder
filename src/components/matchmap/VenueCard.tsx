@@ -154,8 +154,8 @@ export function VenueCard({
             </span>
           )}
           {liveConfirmations > 0 && (
-            <span className="inline-flex items-center gap-1 text-emerald-400">
-              <CheckCheck className="h-3 w-3" /> Sinal por {liveConfirmations}
+            <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/50 px-1.5 py-0.5 font-semibold text-emerald-300">
+              <CheckCheck className="h-3 w-3" /> Sinal confirmado por {liveConfirmations}
             </span>
           )}
         </div>
