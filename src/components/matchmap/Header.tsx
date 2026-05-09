@@ -1,4 +1,4 @@
-import { MapPin, Search, Trophy, Plus } from "lucide-react";
+import { MapPin, Search, Trophy, Plus, Sparkles } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,9 +13,10 @@ interface Props {
   query: string;
   onQuery: (q: string) => void;
   onRegister: () => void;
+  onSuggest: () => void;
 }
 
-export function Header({ query, onQuery, onRegister }: Props) {
+export function Header({ query, onQuery, onRegister, onSuggest }: Props) {
   return (
     <header className="border-b border-border bg-sidebar/80 backdrop-blur-md">
       <div className="flex flex-col gap-3 px-4 py-3 md:flex-row md:items-center md:gap-4 md:px-6">
@@ -30,7 +31,7 @@ export function Header({ query, onQuery, onRegister }: Props) {
 
         <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center">
           <Select defaultValue="joinville">
-            <SelectTrigger className="w-full sm:w-[200px]">
+            <SelectTrigger className="w-full sm:w-[180px]">
               <MapPin className="mr-1 h-4 w-4 text-primary" />
               <SelectValue />
             </SelectTrigger>
@@ -46,19 +47,25 @@ export function Header({ query, onQuery, onRegister }: Props) {
             <Input
               value={query}
               onChange={(e) => onQuery(e.target.value)}
-              placeholder="Buscar por bar, time ou bairro…"
+              placeholder="Buscar bar, time ou competição…"
               className="pl-9"
             />
           </div>
         </div>
 
-        <Button
-          onClick={onRegister}
-          className="bg-[var(--gradient-flame)] font-semibold text-highlight-foreground hover:opacity-90"
-        >
-          <Plus className="h-4 w-4" />
-          Cadastrar meu Bar
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="secondary" onClick={onSuggest} className="gap-1.5">
+            <Sparkles className="h-4 w-4" />
+            <span className="hidden sm:inline">Indicar lugar</span>
+          </Button>
+          <Button
+            onClick={onRegister}
+            className="gap-1.5 bg-[var(--gradient-flame)] font-semibold text-highlight-foreground hover:opacity-90"
+          >
+            <Plus className="h-4 w-4" />
+            <span className="hidden sm:inline">Cadastrar meu Bar</span>
+          </Button>
+        </div>
       </div>
     </header>
   );

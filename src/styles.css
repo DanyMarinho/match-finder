@@ -119,4 +119,8 @@
     color: var(--foreground) !important;
     border-color: var(--border) !important;
   }
+  @keyframes matchmap-ping {
+    0% { transform: scale(0.8); opacity: 0.6; }
+    75%, 100% { transform: scale(1.8); opacity: 0; }
+  }
 }
