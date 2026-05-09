@@ -112,10 +112,8 @@ export function VenueDetailsSheet({
                 count={live.countFor(venue.id)}
                 confirmed={live.hasConfirmed(venue.id)}
                 onConfirm={() => {
-                  live.confirm(venue.id);
-                  if (!live.hasConfirmed(venue.id)) {
-                    toast.success("Check-in feito! Você ajudou outros torcedores.");
-                  }
+                  const ok = live.confirm(venue.id);
+                  if (ok) toast.success("Check-in feito! A comunidade agradece.");
                 }}
               />
             )}
