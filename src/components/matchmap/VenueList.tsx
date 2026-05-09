@@ -73,7 +73,6 @@ export function VenueList({
                 attendance={attendanceFor(v.id)}
                 liveConfirmations={liveConfirmationsFor(v.id)}
                 alertsCount={alertsCountFor(v.id)}
-                distanceFor={distanceFor}
                 distanceKm={distanceFor(v.coords)}
               />
             ))
