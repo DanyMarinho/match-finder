@@ -1,4 +1,4 @@
-import { MapPin, Search, Trophy, Plus, Sparkles } from "lucide-react";
+import { MapPin, Search, Trophy, Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -55,8 +55,8 @@ export function Header({ query, onQuery, onRegister, onSuggest }: Props) {
 
         <div className="flex gap-2">
           <Button variant="secondary" onClick={onSuggest} className="gap-1.5">
-            <Sparkles className="h-4 w-4" />
-            <span className="hidden sm:inline">Indicar lugar</span>
+            <MapPin className="h-4 w-4" />
+            <span className="hidden sm:inline">Faltou seu bar? Indique</span>
           </Button>
           <Button
             onClick={onRegister}
