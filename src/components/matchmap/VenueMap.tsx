@@ -46,7 +46,21 @@ function buildPinIcon(state: PinState): L.DivIcon {
 function FlyTo({ venue }: { venue: Venue | null }) {
   const map = useMap();
   useEffect(() => {
-    if (venue && !venue.suggested) map.flyTo(venue.coords, 16, { duration: 0.8 });
+    if (!venue || venue.suggested) return;
+    const [lat, lng] = venue.coords;
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+    // Wait until the container has real dimensions; otherwise unproject() returns NaN.
+    const run = () => {
+      const size = map.getSize();
+      if (size.x === 0 || size.y === 0) {
+        map.invalidateSize();
+        return;
+      }
+      map.flyTo([lat, lng], 16, { duration: 0.8 });
+    };
+    // Defer one frame to let layout settle.
+    const id = window.requestAnimationFrame(run);
+    return () => window.cancelAnimationFrame(id);
   }, [venue, map]);
   return null;
 }

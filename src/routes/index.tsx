@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Toaster } from "@/components/ui/sonner";
 import { Header } from "@/components/matchmap/Header";
@@ -6,7 +6,17 @@ import { FilterChips } from "@/components/matchmap/FilterChips";
 import { CompetitionChips } from "@/components/matchmap/CompetitionChips";
 import { VenueList } from "@/components/matchmap/VenueList";
 import { VenueDetailsSheet } from "@/components/matchmap/VenueDetailsSheet";
-import { VenueMap } from "@/components/matchmap/VenueMap";
+
+// Leaflet acessa `window` em escopo de módulo — carregar somente no client.
+const VenueMap = lazy(() =>
+  import("@/components/matchmap/VenueMap").then((m) => ({ default: m.VenueMap })),
+);
+
+const MapFallback = () => (
+  <div className="flex h-full w-full animate-pulse items-center justify-center bg-slate-900 text-sm text-slate-400">
+    Carregando mapa…
+  </div>
+);
 import { RegisterBarDialog } from "@/components/matchmap/RegisterBarDialog";
 import { SuggestVenueDialog } from "@/components/matchmap/SuggestVenueDialog";
 import { MobileDrawer } from "@/components/matchmap/MobileDrawer";
@@ -139,6 +149,25 @@ function Dashboard() {
           {listBlock}
         </aside>
         <main className="relative flex-1">
+          <Suspense fallback={<MapFallback />}>
+            <VenueMap
+              venues={f.filtered}
+              selected={f.selected}
+              hoveredId={f.hoveredId}
+              onSelect={handleSelect}
+              onHover={f.setHoveredId}
+              alertsCountFor={alertsCountFor}
+              hasCriticalAlert={hasCriticalAlert}
+              userCoords={f.userCoords}
+              onLocate={handleLocate}
+            />
+          </Suspense>
+        </main>
+      </div>
+
+      {/* Mobile: fullscreen map + bottom drawer */}
+      <div className="relative flex flex-1 flex-col overflow-hidden md:hidden">
+        <Suspense fallback={<MapFallback />}>
           <VenueMap
             venues={f.filtered}
             selected={f.selected}
@@ -150,22 +179,7 @@ function Dashboard() {
             userCoords={f.userCoords}
             onLocate={handleLocate}
           />
-        </main>
-      </div>
-
-      {/* Mobile: fullscreen map + bottom drawer */}
-      <div className="relative flex flex-1 flex-col overflow-hidden md:hidden">
-        <VenueMap
-          venues={f.filtered}
-          selected={f.selected}
-          hoveredId={f.hoveredId}
-          onSelect={handleSelect}
-          onHover={f.setHoveredId}
-          alertsCountFor={alertsCountFor}
-          hasCriticalAlert={hasCriticalAlert}
-          userCoords={f.userCoords}
-          onLocate={handleLocate}
-        />
+        </Suspense>
         <MobileDrawer count={f.filtered.length}>
           <div className="border-b border-border p-4">{filtersBlock}</div>
           {listBlock}
