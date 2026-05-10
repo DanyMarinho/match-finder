@@ -73,6 +73,10 @@ export interface Venue {
   liveConfirmations: number;
   coupon?: Coupon;
   suggested?: boolean;
+  kidsPremium?: { hasMonitors: boolean; tableVisibility: boolean };
+  petFriendly?: boolean;
+  parking?: boolean;
+  covered?: boolean;
 }
 
 export const AMENITY_META: Record<Amenity, { emoji: string; label: string }> = {
