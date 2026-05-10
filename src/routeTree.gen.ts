@@ -9,8 +9,14 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ParaBaresRouteImport } from './routes/para-bares'
 import { Route as IndexRouteImport } from './routes/index'
 
+const ParaBaresRoute = ParaBaresRouteImport.update({
+  id: '/para-bares',
+  path: '/para-bares',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -19,28 +25,39 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/para-bares': typeof ParaBaresRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/para-bares': typeof ParaBaresRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/para-bares': typeof ParaBaresRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/para-bares'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/para-bares'
+  id: '__root__' | '/' | '/para-bares'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ParaBaresRoute: typeof ParaBaresRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/para-bares': {
+      id: '/para-bares'
+      path: '/para-bares'
+      fullPath: '/para-bares'
+      preLoaderRoute: typeof ParaBaresRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -53,6 +70,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ParaBaresRoute: ParaBaresRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
