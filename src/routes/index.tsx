@@ -180,21 +180,6 @@ function Dashboard() {
             onLocate={handleLocate}
           />
         </Suspense>
-      </div>
-
-      {/* Mobile: fullscreen map + bottom drawer */}
-      <div className="relative flex flex-1 flex-col overflow-hidden md:hidden">
-        <VenueMap
-          venues={f.filtered}
-          selected={f.selected}
-          hoveredId={f.hoveredId}
-          onSelect={handleSelect}
-          onHover={f.setHoveredId}
-          alertsCountFor={alertsCountFor}
-          hasCriticalAlert={hasCriticalAlert}
-          userCoords={f.userCoords}
-          onLocate={handleLocate}
-        />
         <MobileDrawer count={f.filtered.length}>
           <div className="border-b border-border p-4">{filtersBlock}</div>
           {listBlock}
