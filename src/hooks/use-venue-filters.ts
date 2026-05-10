@@ -70,6 +70,17 @@ export function useVenueFilters() {
         if (!a.suggested && b.suggested) return -1;
         return haversine(userCoords, a.coords) - haversine(userCoords, b.coords);
       });
+    } else {
+      // Popularidade: confirmações ao vivo + votos em alertas + rating sobem o ranking.
+      const popularity = (v: Venue) => {
+        const alertVotes = v.activeAlerts.reduce((s, a) => s + a.votes, 0);
+        return v.liveConfirmations * 3 + alertVotes + v.rating * 2;
+      };
+      list = [...list].sort((a, b) => {
+        if (a.suggested && !b.suggested) return 1;
+        if (!a.suggested && b.suggested) return -1;
+        return popularity(b) - popularity(a);
+      });
     }
 
     return list;
