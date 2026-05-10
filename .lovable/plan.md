@@ -1,214 +1,120 @@
-## MatchMap v2 — Evolução completa
+# Correção do Crash + Auditoria MatchMap v2
 
-Stack mantida: React, Tailwind v4, shadcn, Leaflet, framer-motion, vaul. Tudo client-side (localStorage para persistência colaborativa simulada).
+## Diagnóstico
 
----
+**Erro raiz (SSR crash)**: `react-leaflet` e `leaflet` acessam `window` no escopo do módulo. Como `VenueMap` é importado estaticamente em `src/routes/index.tsx`, ele entra no bundle SSR e quebra com `ReferenceError: window is not defined`. Isso acaba na Error Boundary "This page didn't load".
 
-### 1. Dados reais — domingo 10/05/2026
+**Erro secundário (runtime)**: `FlyTo` chama `map.flyTo(...)` num map ainda não dimensionado (containers `flex-1` nascem com 0px durante o primeiro paint), gerando `Invalid LatLng object: (NaN, NaN)` quando o Leaflet tenta `unproject` numa tela sem tamanho.
 
-`src/data/venues.ts` reescrito:
+**Auditoria**: `geo.ts` (Haversine) e `hash.ts`/`seedRange` já estão corretos e determinísticos — não há NaN ali. A base de dados tem só 3 bares; o usuário quer 6.
 
-`Match`: `{ id, kickoff (ISO), home, away, competition, league, requiredPackage? }`
+## Mudanças
 
-`Venue` ganha:
-- `matches: Match[]`, `team`, `whatsapp`
-- `broadcastPackages: string[]`, `lastVerified: string` (ISO)
-- `coupon?: { code, label, expiresInHours }`
-- **`operationalStatus`**: `"open" | "maintenance" | "closed_today" | "full"`
-- **`activeAlerts`**: `Array<{ id, type: 'no_tv' | 'no_sub' | 'closed' | 'full', reportedAt: string, votes: number }>`
-- **`claimed`**: `boolean`
-- **`liveConfirmations`**: `number` (seed inicial)
-- **`suggested?`**: `boolean` (para indicações da comunidade)
+### 1. Corrigir crash de SSR — lazy load do mapa
 
-Mock 10/05/2026 (com mistura de status para demonstrar UI):
-- **Bar do Gigante** — `open`, `claimed: true`. Flamengo×Palmeiras 16h, JEC×Brusque 18h30 (Premiere/SporTV).
-- **Arena Sports Pub** — `open`, `claimed: false`. Real×Barça 11h15, Atlético-MG×Inter 18h30 (ESPN/Premiere).
-- **Família & Futebol Espetaria** — `maintenance`, `claimed: false`. Grêmio×Juventude 16h, SP×Corinthians 18h30.
+Em `src/routes/index.tsx`:
 
----
+- Remover `import { VenueMap } from ".../VenueMap"`.
+- Trocar por `const VenueMap = React.lazy(() => import("@/components/matchmap/VenueMap").then(m => ({ default: m.VenueMap })))`.
+- Envolver as duas instâncias (desktop + mobile) num `<Suspense fallback={...}>` com skeleton `bg-slate-900 animate-pulse`.
+- Garantir que `lazy`/`Suspense` venham do `react`.
 
-### 2. Status "AO VIVO" — Tailwind v4 (dot + ping)
+Como `lazy()` só hidrata no client, leaflet nunca é avaliado no servidor. `useMap` e `L.divIcon` continuam internos ao `VenueMap` (já estão).
 
-Helper `src/lib/match-status.ts`: `getMatchStatus(kickoff)` → `"live" | "upcoming" | "ended"`.
+### 2. Hardening do `FlyTo` (corrige `Invalid LatLng (NaN, NaN)`)
 
-`LiveBadge.tsx` (sintaxe v4-safe):
-```tsx
-<span className="relative flex h-2.5 w-2.5">
-  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-  <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
-</span>
-```
+Em `src/components/matchmap/VenueMap.tsx`:
 
-LiveBadge é **suprimido** quando `operationalStatus !== "open"`.
+- No `FlyTo`, guardar contra `map.getSize().x === 0` e contra `coords` inválidos antes de chamar `flyTo`. Disparar `map.invalidateSize()` antes do `flyTo` quando necessário.
+- Validar que `venue.coords` são números finitos.
 
----
+### 3. Auditoria de `seedRange` e `geo.ts`
 
-### 3. Hover sincronizado Card ↔ Pino
+- `src/lib/hash.ts`: `seedRange` já é determinístico (`hash` djb2 + `Math.abs` + `% (max-min)`); só vou explicitar guarda contra `max <= min`. **Nenhuma mudança funcional necessária**, mas adicionar comentário/clamp por robustez.
+- `src/lib/geo.ts`: Haversine já usa `**2` corretamente (operador suportado em ES2016+, compilado pelo Vite). **Nenhuma mudança necessária** — confirmado por inspeção.
 
-`useVenueFilters` ganha `hoveredId`. Card aplica borda laranja em hover; `VenueMap` re-renderiza ícone via `buildPinIcon(state)`.
+### 4. Adicionar 3 novos bares em `src/data/venues.ts`
 
----
+Total: **6 bares fixos** com coords reais de Joinville:
 
-### 4. Mobile Drawer (vaul, arrastável)
 
-Substitui Tabs no mobile. Mapa fullscreen + drawer com snap points (~30%/~90%). Conteúdo: filtros + lista. Desktop mantém split 40/60.
+| Bar                       | Bairro          | Coords             | Vibe                              | Jogos                                                 |
+| ------------------------- | --------------- | ------------------ | --------------------------------- | ----------------------------------------------------- |
+| Opa Bierhaws              | Saguaçu         | -26.2638, -48.8312 | Chopp artesanal                   | Brasileirão (Inter×Bahia 16h, Fluminense×Vasco 18h30) |
+| Boteco da Ilha            | Santo Antônio   | -26.2755, -48.8580 | Caldeirão                         | Champions (Bayern×PSG 16h45) + Brasileirão noturno    |
+| Pizzaria & Esportes Anita | Anita Garibaldi | -26.3201, -48.8478 | Família, climatizada, Espaço Kids | Brasileirão (Cruzeiro×Botafogo 16h)                   |
 
----
 
-### 5. Filtros de competição/time
+Cada um com: `broadcastPackages`, `lastVerified`, `operationalStatus: "open"`, `claimed: false` (Opa) / `true` (Boteco), `liveConfirmations: 0`, `activeAlerts: []`. Pizzaria Anita recebe `coupon` ("Rodízio infantil grátis até 17h").
 
-`CompetitionChips`: "Brasileirão", "La Liga", "Champions", "Série C". Hook ganha `competitionFilter`. Busca varre `home`, `away`, `competition`.
+## Auditoria — status atual confirmado
 
----
 
-### 6. Geolocalização + distância
+| Item                                        | Status                                       |
+| ------------------------------------------- | -------------------------------------------- |
+| MobileDrawer (vaul) substitui Tabs          | ✅ implementado                               |
+| LiveBadge com ping verde (Tailwind v4 safe) | ✅ via dot + ping ring                        |
+| Hover no card destaca pino (laranja)        | ✅ `hoveredId` + re-render por `key`          |
+| "Perto de mim" + Haversine                  | ✅ funcional                                  |
+| Cupom + countdown + Reservar via WhatsApp   | ✅ `CouponDialog` + `whatsappLink`            |
+| Banner "Reivindicar" para `claimed: false`  | ✅ `ClaimBanner`                              |
+| Attendance + Enquete persistidos            | ✅ via `useLocalStorage`                      |
+| Alertas Waze + ícone amber/red no mapa      | ✅ `buildPinIcon('alert' / 'alert-critical')` |
+| Check-in com trava 1/dia em localStorage    | ✅ chave `matchmap_confirmed_<id>_<data>`     |
+| Indicar lugar (Radar) + injeção temporária  | ✅ `SuggestVenueDialog` + tarja "Em Análise"  |
 
-`src/lib/geo.ts` (haversine), `useUserLocation()`. Botão "📍 Perto de mim" ordena por distância. Botão flutuante `LocateButton` no canto sup. dir. do mapa.
 
----
+Tudo presente — após o fix de SSR a v2 fica 100% navegável.
 
-### 7. FOMO determinístico
+## Riscos futuros / pontos a monitorar
 
-`useAttendance()`:
-- Seed determinística: `hash(venue.id) % 28 + 8`.
-- `attending` por venue+data em localStorage.
-- Botão "🔥 Vou assistir aqui" no Sheet.
+1. **Hidratação Leaflet**: se algum dia `VenueDetailsSheet` ou outro componente importar leaflet diretamente, o SSR quebra de novo. Manter leaflet isolado dentro de `VenueMap.tsx`.
+2. `**map.flyTo` em containers de 0px**: ao trocar layout (drawer abrindo/fechando) o mapa pode precisar de `invalidateSize()`. Adicionar `useEffect` que escuta resize.
+3. **localStorage > 5MB**: alertas, attendance, confirmations, sugestões e cupons compartilham origem. Adicionar TTL/cap em `useAlerts` e `useSuggestedVenues` quando passar de ~50 entradas.
+4. `**liveConfirmations` no schema vs hook**: o campo no `Venue` está em `0` e o número exibido vem do hook (seed + delta). Se um dia vierem do backend, padronizar fonte única.
+5. **Hydration mismatch**: hooks que leem `localStorage` no `useState` inicial podem divergir entre SSR/client. Hoje `use-local-storage.ts` faz `typeof window === 'undefined' → fallback`, mas se um componente renderizar valor do storage no primeiro paint, vai diferir. Idealmente usar `useHydrated()` ou efeito de pós-mount para revelar dados sensíveis ao localStorage.
+6. **CartoDB tile policy**: uso pesado pode exigir API key. Para produção, considerar self-host ou outro provedor.
+7. **SEO do mapa lazy**: como o mapa só monta no client, crawlers não veem os pinos. Sem impacto direto (mapa não é conteúdo indexável), mas a lista de bares deve continuar SSR.
+8. **Sugestões só locais**: hoje vivem no localStorage do device — outro usuário não vê. Próximo passo natural é Lovable Cloud para persistir.
 
----
+# CORREÇÃO CRÍTICA & AUDITORIA MATCHMAP v2
 
-### 8. Compartilhar via WhatsApp
+Vamos resolver o crash de inicialização (Error Boundary) e consolidar todas as funcionalidades da v2. Siga estas instruções técnicas rigorosamente:
 
-`ShareButton` usa `navigator.share` ou fallback `wa.me/?text=`. Mensagem com deep-link `?bar=${id}`.
+### 1. FIX DE CRASH (SSR & RUNTIME)
 
----
+- Em 'src/routes/index.tsx': Remova a importação estática do 'VenueMap'. Substitua por um import dinâmico usando 'React.lazy' para garantir que o Leaflet carregue apenas no lado do cliente (client-side). 
 
-### 9. Reserva + Rota + Uber
+- Envolva as instâncias do '<VenueMap />' (Desktop e Mobile) em um '<Suspense>' com um fallback de skeleton (ex: 'bg-slate-900 animate-pulse').
 
-- **Reservar mesa** → `wa.me/${whatsapp}` parametrizado com nome do jogo.
-- **Traçar rota** → Google Maps `dir/?api=1&destination=lat,lng`.
-- **Pedir Uber** → `m.uber.com/ul/?action=setPickup...`.
+- No componente 'FlyTo' dentro de 'VenueMap.tsx', adicione uma proteção: verifique se 'map.getSize().x > 0' e se as coordenadas são válidas antes de disparar o 'flyTo'. Chame 'map.invalidateSize()' antes da transição para garantir que o container esteja dimensionado.
 
-Reservar mesa **oculto** quando `operationalStatus !== "open"`.
+### 2. EXPANSÃO DA BASE DE DADOS (6 Bares)
 
----
+Atualize o 'src/data/venues.ts' para conter 6 bares fixos em Joinville com dados reais de domingo (10/05/2026). Adicione:
 
-### 10. Cupons + Enquete de torcida
+- 'Opa Bierhaus' (Saguaçu): Foco em Chopp, transmitindo Inter x Bahia e Flu x Vasco.
 
-- `CouponDialog` com código + countdown 2h em localStorage.
-- `TorcidaPoll` casa vs. visitante por venue+match.
+- 'Boteco da Ilha' (Santo Antônio): Vibe caldeirão, transmitindo Champions (Bayern x PSG) e Brasileirão.
 
----
+- 'Pizzaria Anita' (Anita Garibaldi): Vibe família, climatizada, com cupom 'Rodízio Infantil Grátis'.
 
-### 11. Empty state + UX
+- Mantenha os 3 bares anteriores (Gigante, Arena e Família & Futebol) atualizados com o novo schema de 'matches' e 'whatsapp'.
 
-`VenueList` empty state com `BeerOff` (lucide) + botão "Limpar filtros".
+### 3. AUDITORIA DE FUNCIONALIDADES v2
 
----
+Certifique-se de que TODOS os módulos abaixo estão ativos e integrados:
 
-### 12. Camada de Confiabilidade
+- [UX MOBILE]: Drawer arrastável (vaul) substituindo abas no mobile.
 
-**12.1 Pacotes de transmissão** — seção no Sheet listando `broadcastPackages`. Cada match comparado com `requiredPackage`: ✅ verde "Transmissão garantida" ou ⚠ âmbar "Pacote não confirmado".
+- [MONETIZAÇÃO]: Cupons com countdown, botões de Reserva/Rota/Uber e banners de 'Reivindicar Perfil'.
 
-**12.2 `lastVerified`** — formato relativo ("Hoje 15:10"). `ShieldCheck` esmeralda no card e bloco visível no Sheet.
+- [CONFIABILIDADE]: Status 'AO VIVO' pulsante, selos de cobertura de streaming (Premiere, etc.) e data da última verificação.
 
-**12.3 Report da comunidade** (legacy, agora unificado em §13).
+- [WAZE-ALERTS]: Relato de problemas (Sem TV, Lotado) com alteração de ícone no mapa (Pino Amber/Red) e banner de alertas no sheet.
 
----
+- [GROWTH]: 'Perto de mim' com ordenação por KM (Haversine), Enquete de Torcida e Contador 'Quem vai' (localStorage).
 
-### 13. Módulo Waze de Alertas
+- [RADAR]: Botão 'Indicar lugar' que injeta o bar temporário na lista com tarja 'Em Análise'.
 
-**13.1 Visual de status operacional**
-- `operationalStatus !== "open"` → card e Sheet com `opacity-60`, LiveBadge desabilitado.
-- Tarja full-width no topo do card:
-  - `maintenance`: amber-500 — "🔧 Em manutenção / reformas"
-  - `closed_today`: red-500 — "🚫 Fechado hoje"
-  - `full`: orange-500 — "🔥 Casa cheia / sem mesas"
-- Botão "Reservar mesa" oculto nesses estados.
-
-**13.2 Pinos de alerta no mapa**
-- Se `activeAlerts` recente (<3h) existir, `buildPinIcon` retorna SVG `TriangleAlert` (amber-500, ou red-500 se `type === 'closed'`), com glow pulsante.
-
-**13.3 `<WazeAlertBanner alerts={...} />`**
-- Topo do Sheet, lista alertas com ícone, label legível ("Sem sinal há 12 min — 4 pessoas reportaram"), botão "Confirmar" (incrementa `votes`).
-
-**13.4 Painel de relato rápido**
-- 3 botões grandes no Sheet: "📵 Sem sinal", "🔥 Lotado", "🚪 Fechado".
-- Click → `useAlerts()` adiciona `{ type, reportedAt: now, votes: 1 }` em localStorage por venue → toast "Obrigado! Comunidade alertada."
-- Se >=3 votos no mesmo tipo em <1h, eleva à tarja oficial.
-
----
-
-### 14. Funil de Monetização — Reivindicação
-
-- Para `claimed: false`, banner fixo no rodapé do Sheet:
-  - bg `slate-900`, borda esquerda `primary`, texto: "É dono deste bar? Reivindique o perfil para responder alertas e atualizar status ao vivo."
-  - Botão "Reivindicar perfil" abre `<ClaimBarDialog>`.
-- `ClaimBarDialog` (form validado com **zod**):
-  - Nome do dono (max 100), CNPJ/CPF (regex BR), Telefone, RadioGroup de plano: "Básico (grátis)", "Premium R$ 99/mês", "Destaque R$ 249/mês".
-  - Submit → toast "Recebemos sua solicitação. Em breve nosso time entra em contato." (sem backend; salva intent em localStorage).
-- Para `claimed: true`, exibir selo discreto ✓ "Perfil verificado" no header do Sheet.
-
----
-
-### 15. Check-in ao Vivo (validação positiva)
-
-- `useLiveConfirmations()`: seed inicial determinística (`hash(venue.id) % 12`); botão alterna confirmação do dia atual em localStorage.
-- Botão de destaque verde no topo do Sheet (acima do WazeBanner): **"✅ Confirmar que está passando agora"**.
-- Click → incrementa contador + toast animado "Check-in feito! Você ajudou outros torcedores."
-- Card exibe badge verde com `CheckCheck` (lucide): "Sinal confirmado por 23 torcedores".
-- Quando `activeAlerts` e `liveConfirmations` coexistem, ambos aparecem (UX honesta — usuário decide).
-
----
-
-### 16. Radar da Comunidade — Sugerir novo bar
-
-- Botão secundário no `Header` (e topo da sidebar mobile): "📍 Conhece um lugar? Indique aqui".
-- `<SuggestVenueDialog>` (validado com zod):
-  - Nome do local, bairro de Joinville (Select com bairros principais + opção outro), competições típicas (multi-select chips).
-- Submit → adiciona à lista local com `suggested: true`, status `"open"`, sem coords reais (não aparece no mapa, só na lista) + badge cinza "💡 Sugerido pela comunidade — em verificação".
-- Toast: "Obrigado! Vamos verificar e adicionar ao mapa em breve."
-- Persistência em localStorage para sobreviver ao refresh.
-
----
-
-### Arquivos a criar
-
-**Libs/utils:**
-- `src/lib/match-status.ts`, `geo.ts`, `share.ts`, `format-verified.ts`, `hash.ts`, `validation-schemas.ts` (zod)
-
-**Hooks:**
-- `use-user-location.ts`, `use-attendance.ts`, `use-coupons.ts`, `use-poll.ts`, `use-alerts.ts`, `use-live-confirmations.ts`, `use-suggested-venues.ts`, `use-claim-intents.ts`
-
-**Componentes (`src/components/matchmap/`):**
-- `LiveBadge.tsx`, `MatchRow.tsx`, `CompetitionChips.tsx`, `MobileDrawer.tsx`
-- `LocateButton.tsx`, `AttendanceButton.tsx`, `ShareButton.tsx`
-- `CouponDialog.tsx`, `TorcidaPoll.tsx`
-- `TrustBadge.tsx`, `BroadcastPackages.tsx`
-- `StatusOverlay.tsx` (tarja de manutenção/fechado/full)
-- `WazeAlertBanner.tsx`, `QuickReportPanel.tsx`
-- `LiveConfirmButton.tsx`, `ConfirmationsBadge.tsx`
-- `ClaimBanner.tsx`, `ClaimBarDialog.tsx`
-- `SuggestVenueDialog.tsx`, `SuggestedBadge.tsx`
-
-### Arquivos a editar
-
-- `src/data/venues.ts` — schema completo + dados 10/05.
-- `src/hooks/use-venue-filters.ts` — hover, competição, distância, mescla com sugestões.
-- `src/components/matchmap/VenueCard.tsx`, `VenueDetailsSheet.tsx`, `VenueMap.tsx`, `VenueList.tsx`, `Header.tsx`.
-- `src/routes/index.tsx` — Drawer mobile + parâmetro `?bar=` para deep-link.
-
----
-
-### Princípios de segurança aplicados
-
-- Todos os formulários (Claim, Suggest, Register) validam com **zod** + `encodeURIComponent` em URLs externas (WhatsApp).
-- Limites de comprimento por campo; sem `dangerouslySetInnerHTML`.
-- Nenhum dado sensível logado.
-
----
-
-### Fora de escopo
-
-- Backend / persistência real (tudo em localStorage; reports não saem do navegador).
-- Auth, pagamento real do plano Premium.
-- Geocoding de bares sugeridos (entram só na lista, sem pino).
+Se algum desses itens estiver faltando ou tiver sido sobrescrito, re-implemente-o agora usando os hooks e componentes modulares que definimos.
