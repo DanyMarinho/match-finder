@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Toaster } from "@/components/ui/sonner";
 import { Header } from "@/components/matchmap/Header";
@@ -6,7 +6,17 @@ import { FilterChips } from "@/components/matchmap/FilterChips";
 import { CompetitionChips } from "@/components/matchmap/CompetitionChips";
 import { VenueList } from "@/components/matchmap/VenueList";
 import { VenueDetailsSheet } from "@/components/matchmap/VenueDetailsSheet";
-import { VenueMap } from "@/components/matchmap/VenueMap";
+
+// Leaflet acessa `window` em escopo de módulo — carregar somente no client.
+const VenueMap = lazy(() =>
+  import("@/components/matchmap/VenueMap").then((m) => ({ default: m.VenueMap })),
+);
+
+const MapFallback = () => (
+  <div className="flex h-full w-full animate-pulse items-center justify-center bg-slate-900 text-sm text-slate-400">
+    Carregando mapa…
+  </div>
+);
 import { RegisterBarDialog } from "@/components/matchmap/RegisterBarDialog";
 import { SuggestVenueDialog } from "@/components/matchmap/SuggestVenueDialog";
 import { MobileDrawer } from "@/components/matchmap/MobileDrawer";
