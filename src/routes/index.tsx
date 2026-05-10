@@ -149,6 +149,25 @@ function Dashboard() {
           {listBlock}
         </aside>
         <main className="relative flex-1">
+          <Suspense fallback={<MapFallback />}>
+            <VenueMap
+              venues={f.filtered}
+              selected={f.selected}
+              hoveredId={f.hoveredId}
+              onSelect={handleSelect}
+              onHover={f.setHoveredId}
+              alertsCountFor={alertsCountFor}
+              hasCriticalAlert={hasCriticalAlert}
+              userCoords={f.userCoords}
+              onLocate={handleLocate}
+            />
+          </Suspense>
+        </main>
+      </div>
+
+      {/* Mobile: fullscreen map + bottom drawer */}
+      <div className="relative flex flex-1 flex-col overflow-hidden md:hidden">
+        <Suspense fallback={<MapFallback />}>
           <VenueMap
             venues={f.filtered}
             selected={f.selected}
@@ -160,7 +179,7 @@ function Dashboard() {
             userCoords={f.userCoords}
             onLocate={handleLocate}
           />
-        </main>
+        </Suspense>
       </div>
 
       {/* Mobile: fullscreen map + bottom drawer */}
