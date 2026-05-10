@@ -1,6 +1,7 @@
-import { MapPin, Search, Trophy, Plus } from "lucide-react";
+import { MapPin, Search, Trophy, Plus, Store } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Link } from "@tanstack/react-router";
 import {
   Select,
   SelectContent,
@@ -54,6 +55,13 @@ export function Header({ query, onQuery, onRegister, onSuggest }: Props) {
         </div>
 
         <div className="flex gap-2">
+          <Link
+            to="/para-bares"
+            className="hidden items-center gap-1.5 rounded-md px-3 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground md:flex"
+          >
+            <Store className="h-4 w-4" />
+            Para Bares
+          </Link>
           <Button variant="secondary" onClick={onSuggest} className="gap-1.5">
             <MapPin className="h-4 w-4" />
             <span className="hidden sm:inline">Faltou seu bar? Indique</span>
