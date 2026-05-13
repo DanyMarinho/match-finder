@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Toaster } from "@/components/ui/sonner";
 import { Header } from "@/components/matchmap/Header";
@@ -20,14 +20,16 @@ const MapFallback = () => (
 import { RegisterBarDialog } from "@/components/matchmap/RegisterBarDialog";
 import { SuggestVenueDialog } from "@/components/matchmap/SuggestVenueDialog";
 import { MobileDrawer } from "@/components/matchmap/MobileDrawer";
+import { AuthDialog } from "@/components/auth/AuthDialog";
 import { useVenueFilters } from "@/hooks/use-venue-filters";
 import { useAttendance } from "@/hooks/use-attendance";
 import { useLiveConfirmations } from "@/hooks/use-live-confirmations";
 import { useAlerts } from "@/hooks/use-alerts";
 import { useUserLocation } from "@/hooks/use-user-location";
+import { useVenues } from "@/hooks/use-venues";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Navigation } from "lucide-react";
-import { VENUES } from "@/data/venues";
+import { Navigation, User } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   component: Dashboard,
@@ -49,21 +51,38 @@ export const Route = createFileRoute("/")({
 });
 
 function Dashboard() {
-  const f = useVenueFilters();
+  const { venues, isLoading } = useVenues();
+  const f = useVenueFilters(venues);
   const attendance = useAttendance();
   const live = useLiveConfirmations();
+  const [session, setSession] = useState<any>(null);
 
-  // Seed alerts from venue data (only for source venues, not user-suggested).
-  const seedAlerts: Record<string, typeof VENUES[number]["activeAlerts"]> = {};
-  VENUES.forEach((v) => {
-    if (v.activeAlerts.length > 0) seedAlerts[v.id] = v.activeAlerts;
-  });
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // Seed alerts from venue data
+  const seedAlerts = useMemo(() => {
+    const seed: Record<string, any[]> = {};
+    venues.forEach((v) => {
+      if (v.activeAlerts.length > 0) seed[v.id] = v.activeAlerts;
+    });
+    return seed;
+  }, [venues]);
+  
   const { alertsFor, report, confirmAlert } = useAlerts(seedAlerts);
 
   const userLoc = useUserLocation();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [registerOpen, setRegisterOpen] = useState(false);
   const [suggestOpen, setSuggestOpen] = useState(false);
+  const [authOpen, setAuthOpen] = useState(false);
 
   // Sync user coords to filters
   useEffect(() => {
@@ -140,7 +159,18 @@ function Dashboard() {
         onQuery={f.setQuery}
         onRegister={() => setRegisterOpen(true)}
         onSuggest={() => setSuggestOpen(true)}
+        session={session}
+        onLogin={() => setAuthOpen(true)}
       />
+
+      {isLoading && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/50 backdrop-blur-sm">
+          <div className="flex flex-col items-center gap-4">
+            <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+            <p className="font-bold text-primary animate-pulse">Sincronizando Joinville...</p>
+          </div>
+        </div>
+      )}
 
       {/* Desktop split */}
       <div className="hidden flex-1 overflow-hidden md:flex">
@@ -200,6 +230,7 @@ function Dashboard() {
         onOpenChange={setSuggestOpen}
         onSubmit={f.submitSuggestion}
       />
+      <AuthDialog open={authOpen} onOpenChange={setAuthOpen} />
       <Toaster />
     </div>
   );
