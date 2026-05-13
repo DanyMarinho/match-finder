@@ -82,6 +82,11 @@ export function VenueCard({
             ⚠ {alertsCount} alerta{alertsCount > 1 ? "s" : ""}
           </div>
         )}
+        {liveConfirmations >= 5 && (
+          <div className="absolute bottom-2 left-2 inline-flex items-center gap-1 rounded-full bg-emerald-500 px-2 py-0.5 text-[10px] font-bold text-white shadow-lg animate-pulse">
+            🔥 BOMBARDO
+          </div>
+        )}
       </div>
       <div className="space-y-2 p-3">
         <div className="flex items-start justify-between gap-2">
