@@ -17,10 +17,11 @@ export function useVenues() {
       
       if (error) throw error;
       
-      return data.map((v: any) => ({
+      return (data || []).map((v: any) => ({
         ...v,
         coords: v.coords as [number, number],
-        broadcastPackages: v.broadcast_packages,
+        matches: v.matches || [],
+        broadcastPackages: v.broadcast_packages || [],
         lastVerified: v.last_verified,
         operationalStatus: v.operational_status,
         activeAlerts: [], 
@@ -29,8 +30,9 @@ export function useVenues() {
   });
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
     const channel = supabase
-      .channel("venues_realtime")
+      .channel(`v_${Math.random().toString(36).slice(2, 7)}`)
       .on(
         "postgres_changes",
         {
@@ -53,7 +55,7 @@ export function useVenues() {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      channel.unsubscribe();
     };
   }, [queryClient]);
 
