@@ -10,6 +10,7 @@ export function useVenues() {
   const { data: venues = [], isLoading } = useQuery({
     queryKey: ["venues"],
     queryFn: async () => {
+      console.log("[useVenues] Fetching venues...");
       const { data, error } = await supabase
         .from("venues")
         .select("*")
