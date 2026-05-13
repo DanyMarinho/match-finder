@@ -57,8 +57,10 @@ function Dashboard() {
   const attendance = useAttendance();
   const live = useLiveConfirmations();
   const [session, setSession] = useState<any>(null);
-
+  const [isMounted, setIsMounted] = useState(false);
+ 
   useEffect(() => {
+    setIsMounted(true);
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
     });
@@ -210,6 +212,29 @@ function Dashboard() {
           {listBlock}
         </aside>
         <main className="relative flex-1">
+          {isMounted ? (
+            <Suspense fallback={<MapFallback />}>
+              <VenueMap
+                venues={f.filtered}
+                selected={f.selected}
+                hoveredId={f.hoveredId}
+                onSelect={handleSelect}
+                onHover={f.setHoveredId}
+                alertsCountFor={alertsCountFor}
+                hasCriticalAlert={hasCriticalAlert}
+                userCoords={f.userCoords}
+                onLocate={handleLocate}
+              />
+            </Suspense>
+          ) : (
+            <MapFallback />
+          )}
+        </main>
+      </div>
+
+      {/* Mobile: fullscreen map + bottom drawer */}
+      <div className="relative flex flex-1 flex-col overflow-hidden md:hidden">
+        {isMounted ? (
           <Suspense fallback={<MapFallback />}>
             <VenueMap
               venues={f.filtered}
@@ -223,24 +248,9 @@ function Dashboard() {
               onLocate={handleLocate}
             />
           </Suspense>
-        </main>
-      </div>
-
-      {/* Mobile: fullscreen map + bottom drawer */}
-      <div className="relative flex flex-1 flex-col overflow-hidden md:hidden">
-        <Suspense fallback={<MapFallback />}>
-          <VenueMap
-            venues={f.filtered}
-            selected={f.selected}
-            hoveredId={f.hoveredId}
-            onSelect={handleSelect}
-            onHover={f.setHoveredId}
-            alertsCountFor={alertsCountFor}
-            hasCriticalAlert={hasCriticalAlert}
-            userCoords={f.userCoords}
-            onLocate={handleLocate}
-          />
-        </Suspense>
+        ) : (
+          <MapFallback />
+        )}
         <MobileDrawer count={f.filtered.length}>
           <div className="border-b border-border p-4">{filtersBlock}</div>
           {listBlock}
