@@ -1,9 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
+import { z } from "zod";
 
 export const submitCheckIn = createServerFn({ method: "POST" })
-  .handler(async (ctx) => {
-    const venueId = ctx.data as string;
+  .validator((d: string) => d)
+  .handler(async ({ data: venueId }) => {
     const { error } = await supabase.rpc('increment_live_confirmations', { venue_id: venueId });
     if (error) {
       const { data: venue } = await supabase.from('venues').select('live_confirmations').eq('id', venueId).single();
@@ -16,8 +17,8 @@ export const submitCheckIn = createServerFn({ method: "POST" })
   });
 
 export const reportAlert = createServerFn({ method: "POST" })
-  .handler(async (ctx) => {
-    const data = ctx.data as { venueId: string; type: string };
+  .validator(z.object({ venueId: z.string(), type: z.string() }))
+  .handler(async ({ data }) => {
     await supabase.from('alerts').insert({
       venue_id: data.venueId,
       type: data.type
@@ -26,8 +27,14 @@ export const reportAlert = createServerFn({ method: "POST" })
   });
 
 export const registerVenue = createServerFn({ method: "POST" })
-  .handler(async (ctx) => {
-    const data = ctx.data as { name: string; address: string; phone?: string; amenities?: string[]; notes?: string };
+  .validator(z.object({
+    name: z.string(),
+    address: z.string(),
+    phone: z.string().optional(),
+    amenities: z.array(z.string()).optional(),
+    notes: z.string().optional()
+  }))
+  .handler(async ({ data }) => {
     await supabase.from('registrations').insert({
       name: data.name,
       address: data.address,
