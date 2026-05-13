@@ -1,4 +1,4 @@
-import { MapPin, Search, Trophy, Plus, Store } from "lucide-react";
+import { MapPin, Search, Trophy, Plus, Store, User, LogOut } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Link } from "@tanstack/react-router";
@@ -15,9 +15,14 @@ interface Props {
   onQuery: (q: string) => void;
   onRegister: () => void;
   onSuggest: () => void;
+  session: any;
+  onLogin: () => void;
 }
 
-export function Header({ query, onQuery, onRegister, onSuggest }: Props) {
+export function Header({ query, onQuery, onRegister, onSuggest, session, onLogin }: Props) {
+  const handleLogout = () => {
+    import("@/integrations/supabase/client").then(m => m.supabase.auth.signOut());
+  };
   return (
     <header className="border-b border-border bg-sidebar/80 backdrop-blur-md">
       <div className="flex flex-col gap-3 px-4 py-3 md:flex-row md:items-center md:gap-4 md:px-6">
@@ -68,11 +73,27 @@ export function Header({ query, onQuery, onRegister, onSuggest }: Props) {
           </Button>
           <Button
             onClick={onRegister}
-            className="gap-1.5 bg-[var(--gradient-flame)] font-semibold text-highlight-foreground hover:opacity-90"
+            className="hidden gap-1.5 bg-[var(--gradient-flame)] font-semibold text-highlight-foreground hover:opacity-90 lg:flex"
           >
             <Plus className="h-4 w-4" />
-            <span className="hidden sm:inline">Cadastrar meu Bar</span>
+            <span>Cadastrar meu Bar</span>
           </Button>
+
+          {session ? (
+            <div className="flex items-center gap-2">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-surface-elevated text-xs font-bold text-primary">
+                {session.user.email?.[0].toUpperCase()}
+              </div>
+              <Button variant="ghost" size="icon" onClick={handleLogout} title="Sair">
+                <LogOut className="h-4 w-4 text-muted-foreground" />
+              </Button>
+            </div>
+          ) : (
+            <Button variant="outline" onClick={onLogin} className="gap-1.5 border-primary/30 hover:border-primary">
+              <User className="h-4 w-4 text-primary" />
+              <span className="hidden sm:inline">Entrar</span>
+            </Button>
+          )}
         </div>
       </div>
     </header>
