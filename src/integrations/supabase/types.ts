@@ -14,7 +14,181 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      alerts: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          id: string
+          type: string
+          venue_id: string | null
+          votes: number | null
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          type: string
+          venue_id?: string | null
+          votes?: number | null
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          type?: string
+          venue_id?: string | null
+          votes?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alerts_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      check_ins: {
+        Row: {
+          created_at: string
+          device_id: string | null
+          id: string
+          user_id: string | null
+          venue_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          device_id?: string | null
+          id?: string
+          user_id?: string | null
+          venue_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          device_id?: string | null
+          id?: string
+          user_id?: string | null
+          venue_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "check_ins_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      registrations: {
+        Row: {
+          address: string
+          amenities: string[] | null
+          created_at: string
+          id: string
+          name: string
+          notes: string | null
+          phone: string | null
+          status: string | null
+        }
+        Insert: {
+          address: string
+          amenities?: string[] | null
+          created_at?: string
+          id?: string
+          name: string
+          notes?: string | null
+          phone?: string | null
+          status?: string | null
+        }
+        Update: {
+          address?: string
+          amenities?: string[] | null
+          created_at?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          status?: string | null
+        }
+        Relationships: []
+      }
+      venues: {
+        Row: {
+          address: string
+          amenities: string[] | null
+          broadcast_packages: string[] | null
+          claimed: boolean | null
+          coords: Json
+          created_at: string
+          description: string | null
+          entry: string | null
+          hours: string | null
+          id: string
+          image: string | null
+          last_verified: string | null
+          live_confirmations: number | null
+          matches: Json | null
+          name: string
+          neighborhood: string
+          operational_status: string | null
+          phone: string | null
+          rating: number | null
+          suggested: boolean | null
+          updated_at: string
+          whatsapp: string | null
+        }
+        Insert: {
+          address: string
+          amenities?: string[] | null
+          broadcast_packages?: string[] | null
+          claimed?: boolean | null
+          coords: Json
+          created_at?: string
+          description?: string | null
+          entry?: string | null
+          hours?: string | null
+          id: string
+          image?: string | null
+          last_verified?: string | null
+          live_confirmations?: number | null
+          matches?: Json | null
+          name: string
+          neighborhood: string
+          operational_status?: string | null
+          phone?: string | null
+          rating?: number | null
+          suggested?: boolean | null
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Update: {
+          address?: string
+          amenities?: string[] | null
+          broadcast_packages?: string[] | null
+          claimed?: boolean | null
+          coords?: Json
+          created_at?: string
+          description?: string | null
+          entry?: string | null
+          hours?: string | null
+          id?: string
+          image?: string | null
+          last_verified?: string | null
+          live_confirmations?: number | null
+          matches?: Json | null
+          name?: string
+          neighborhood?: string
+          operational_status?: string | null
+          phone?: string | null
+          rating?: number | null
+          suggested?: boolean | null
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
