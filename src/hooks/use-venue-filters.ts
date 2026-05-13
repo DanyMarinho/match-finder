@@ -8,7 +8,7 @@ import {
 import { haversine, type LatLng } from "@/lib/geo";
 import { useSuggestedVenues } from "./use-suggested-venues";
 
-export function useVenueFilters() {
+export function useVenueFilters(venues: Venue[]) {
   const [active, setActive] = useState<Set<Amenity>>(new Set());
   const [competitions, setCompetitions] = useState<Set<Competition>>(new Set());
   const [query, setQuery] = useState("");
@@ -19,7 +19,7 @@ export function useVenueFilters() {
 
   const { asVenues, submit: submitSuggestion } = useSuggestedVenues();
 
-  const allVenues = useMemo<Venue[]>(() => [...VENUES, ...asVenues()], [asVenues]);
+  const allVenues = useMemo<Venue[]>(() => [...venues, ...asVenues()], [venues, asVenues]);
 
   const toggle = (a: Amenity) =>
     setActive((prev) => {
