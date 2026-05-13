@@ -127,21 +127,48 @@ function Dashboard() {
 
   const filtersBlock = (
     <div className="space-y-4">
-      <FilterChips active={f.active} onToggle={f.toggle} onClear={f.clear} />
-      <CompetitionChips active={f.competitions} onToggle={f.toggleCompetition} />
-      <Button
-        variant={f.sortByDistance ? "default" : "secondary"}
-        size="sm"
-        onClick={handleNearMe}
-        className="w-full gap-2"
-      >
-        <Navigation className="h-4 w-4" />
-        {f.sortByDistance ? "Ordenado por distância" : "Perto de mim"}
-      </Button>
+      <div className="flex gap-2">
+        <Button
+          variant={!showRanking ? "default" : "outline"}
+          size="sm"
+          className="flex-1 gap-2"
+          onClick={() => setShowRanking(false)}
+        >
+          <MapIcon className="h-4 w-4" />
+          Mapa
+        </Button>
+        <Button
+          variant={showRanking ? "default" : "outline"}
+          size="sm"
+          className="flex-1 gap-2"
+          onClick={() => setShowRanking(true)}
+        >
+          <Trophy className="h-4 w-4 text-amber-500" />
+          Ranking
+        </Button>
+      </div>
+      
+      {!showRanking && (
+        <>
+          <FilterChips active={f.active} onToggle={f.toggle} onClear={f.clear} />
+          <CompetitionChips active={f.competitions} onToggle={f.toggleCompetition} />
+          <Button
+            variant={f.sortByDistance ? "default" : "secondary"}
+            size="sm"
+            onClick={handleNearMe}
+            className="w-full gap-2"
+          >
+            <Navigation className="h-4 w-4" />
+            {f.sortByDistance ? "Ordenado por distância" : "Perto de mim"}
+          </Button>
+        </>
+      )}
     </div>
   );
 
-  const listBlock = (
+  const listBlock = showRanking ? (
+    <RankingBoard venues={venues} onSelect={handleSelect} />
+  ) : (
     <VenueList
       venues={f.filtered}
       selectedId={f.selectedId}
