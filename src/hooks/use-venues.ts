@@ -10,7 +10,6 @@ export function useVenues() {
   const { data: venues = [], isLoading } = useQuery({
     queryKey: ["venues"],
     queryFn: async () => {
-      console.log("[useVenues] Fetching venues...");
       const { data, error } = await supabase
         .from("venues")
         .select("*")
@@ -21,6 +20,7 @@ export function useVenues() {
       return (data || []).map((v: any) => ({
         ...v,
         coords: v.coords as [number, number],
+        matches: v.matches || [],
         broadcastPackages: v.broadcast_packages || [],
         lastVerified: v.last_verified,
         operationalStatus: v.operational_status,

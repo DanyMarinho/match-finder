@@ -52,7 +52,6 @@ export const Route = createFileRoute("/")({
 });
 
 function Dashboard() {
-  console.log("[Dashboard] Rendering...");
   const { venues, isLoading } = useVenues();
   const f = useVenueFilters(venues);
   const attendance = useAttendance();
