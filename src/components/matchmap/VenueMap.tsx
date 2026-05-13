@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { LocateButton } from "./LocateButton";
 import type { LatLng } from "@/lib/geo";
 
-type PinState = "idle" | "hovered" | "selected" | "alert" | "alert-critical";
+type PinState = "idle" | "hovered" | "selected" | "alert" | "alert-critical" | "bombando";
 
 function buildPinIcon(state: PinState): L.DivIcon {
   const color =
@@ -15,19 +15,25 @@ function buildPinIcon(state: PinState): L.DivIcon {
       ? "#ef4444"
       : state === "alert"
         ? "#f59e0b"
-        : state === "hovered"
-          ? "#fb923c"
-          : "#10b981";
+        : state === "bombando"
+          ? "#f59e0b"
+          : state === "hovered"
+            ? "#fb923c"
+            : "#10b981";
   const size = state === "selected" || state === "hovered" ? 42 : 34;
   const height = Math.round(size * 1.235);
-  const ping =
-    state === "alert" || state === "alert-critical"
+  const isPulsing = state === "alert" || state === "alert-critical" || state === "bombando";
+  const ping = isPulsing
       ? `<span style="position:absolute;inset:-4px;border-radius:9999px;background:${color};opacity:0.35;animation:matchmap-ping 1.6s cubic-bezier(0,0,0.2,1) infinite"></span>`
       : "";
-  const inner =
-    state === "alert" || state === "alert-critical"
-      ? `<svg viewBox="0 0 24 24" width="${size * 0.55}" height="${size * 0.55}" fill="none" stroke="#0f172a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;top:18%;left:22%"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>`
-      : `<circle cx="${size / 2}" cy="${size * 0.4}" r="${size * 0.18}" fill="#0f172a"/><circle cx="${size / 2}" cy="${size * 0.4}" r="${size * 0.09}" fill="${color}"/>`;
+  
+  let inner = `<circle cx="${size / 2}" cy="${size * 0.4}" r="${size * 0.18}" fill="#0f172a"/><circle cx="${size / 2}" cy="${size * 0.4}" r="${size * 0.09}" fill="${color}"/>`;
+  
+  if (state === "alert" || state === "alert-critical") {
+    inner = `<svg viewBox="0 0 24 24" width="${size * 0.55}" height="${size * 0.55}" fill="none" stroke="#0f172a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;top:18%;left:22%"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>`;
+  } else if (state === "bombando") {
+    inner = `<svg viewBox="0 0 24 24" width="${size * 0.55}" height="${size * 0.55}" fill="#0f172a" style="position:absolute;top:18%;left:22%"><path d="M8.586 2.586A2 2 0 0 1 10 2h4a2 2 0 0 1 2 2v2h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3V4a2 2 0 0 1 .586-1.414ZM10 6h4V4h-4v2Zm1 10a1 1 0 1 0-2 0 1 1 0 0 0 2 0Zm4 0a1 1 0 1 0-2 0 1 1 0 0 0 2 0Zm-3-4a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z"/></svg>`;
+  }
 
   return L.divIcon({
     className: "matchmap-pin",
@@ -36,7 +42,7 @@ function buildPinIcon(state: PinState): L.DivIcon {
       <svg viewBox="0 0 32 40" width="${size}" height="${height}" style="position:relative;z-index:1">
         <path d="M16 0C7.2 0 0 7 0 15.6 0 27 16 40 16 40s16-13 16-24.4C32 7 24.8 0 16 0z" fill="${color}"/>
       </svg>
-      <svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" style="position:absolute;top:0;left:0;z-index:2">${inner}</svg>
+      <div style="position:absolute;top:0;left:0;width:${size}px;height:${size}px;z-index:2;display:flex;align-items:center;justify-content:center">${inner}</div>
     </div>`,
     iconSize: [size, height],
     iconAnchor: [size / 2, height],
