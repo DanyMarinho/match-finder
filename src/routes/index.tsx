@@ -83,24 +83,27 @@ function Dashboard() {
   const [registerOpen, setRegisterOpen] = useState(false);
   const [suggestOpen, setSuggestOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
+  const [showRanking, setShowRanking] = useState(false);
 
   // Sync user coords to filters
   useEffect(() => {
     if (userLoc.state.status === "ready") {
       f.setUserCoords(userLoc.state.coords);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userLoc.state]);
 
   // Deep link ?bar=
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const id = new URLSearchParams(window.location.search).get("bar");
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get("bar");
+    const rank = params.get("ranking");
+    
     if (id) {
       f.setSelectedId(id);
       setSheetOpen(true);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (rank === "true") setShowRanking(true);
   }, []);
 
   const handleSelect = (id: string) => {
