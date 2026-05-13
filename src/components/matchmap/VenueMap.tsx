@@ -56,7 +56,6 @@ function FlyTo({ venue }: { venue: Venue | null }) {
     if (!venue || venue.suggested) return;
     const [lat, lng] = venue.coords;
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
-    // Wait until the container has real dimensions; otherwise unproject() returns NaN.
     const run = () => {
       const size = map.getSize();
       if (size.x === 0 || size.y === 0) {
@@ -65,7 +64,6 @@ function FlyTo({ venue }: { venue: Venue | null }) {
       }
       map.flyTo([lat, lng], 16, { duration: 0.8 });
     };
-    // Defer one frame to let layout settle.
     const id = window.requestAnimationFrame(run);
     return () => window.cancelAnimationFrame(id);
   }, [venue, map]);
@@ -131,9 +129,11 @@ export function VenueMap({
                   ? "alert-critical"
                   : alerts > 0
                     ? "alert"
-                    : hoveredId === v.id
-                      ? "hovered"
-                      : "idle";
+                    : (v.liveConfirmations || 0) >= 5
+                      ? "bombando"
+                      : hoveredId === v.id
+                        ? "hovered"
+                        : "idle";
             const next = v.matches[0];
             return (
               <Marker
