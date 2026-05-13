@@ -278,9 +278,73 @@ function AdminDashboard() {
             </div>
           </TabsContent>
         </Tabs>
-      </div>
+      <AddVenueDialog open={addDialogOpen} onOpenChange={setAddDialogOpen} />
     </div>
   );
+}
+
+function AddVenueDialog({ open, onOpenChange }: { open: boolean, onOpenChange: (o: boolean) => void }) {
+  const [name, setName] = useState("");
+  const [address, setAddress] = useState("");
+  const [neighborhood, setNeighborhood] = useState("");
+  const queryClient = useQueryClient();
+
+  const addMutation = useMutation({
+    mutationFn: async () => {
+      const id = name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "-");
+      const { error } = await supabase.from("venues").insert({
+        id,
+        name,
+        address,
+        neighborhood,
+        coords: [-26.3, -48.84],
+        operational_status: "open",
+        last_verified: new Date().toISOString().split("T")[0],
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Bar adicionado!");
+      queryClient.invalidateQueries({ queryKey: ["venues"] });
+      onOpenChange(false);
+      setName("");
+      setAddress("");
+      setNeighborhood("");
+    },
+    onError: (err: any) => toast.error("Erro: " + err.message),
+  });
+
+  return (
+    <Card className={cn("fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm", !open && "hidden")}>
+      <Card className="w-full max-w-md bg-slate-900 border-slate-800 p-6 space-y-4">
+        <div className="flex justify-between items-center">
+          <CardTitle>Adicionar Novo Bar</CardTitle>
+          <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)}><X className="h-4 w-4" /></Button>
+        </div>
+        <div className="space-y-4">
+          <div className="space-y-1">
+            <label className="text-xs text-slate-400">Nome do Bar</label>
+            <input className="w-full bg-slate-800 border border-slate-700 rounded-md p-2 text-sm" value={name} onChange={e => setName(e.target.value)} />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs text-slate-400">Endereço</label>
+            <input className="w-full bg-slate-800 border border-slate-700 rounded-md p-2 text-sm" value={address} onChange={e => setAddress(e.target.value)} />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs text-slate-400">Bairro</label>
+            <input className="w-full bg-slate-800 border border-slate-700 rounded-md p-2 text-sm" value={neighborhood} onChange={e => setNeighborhood(e.target.value)} />
+          </div>
+          <Button className="w-full" onClick={() => addMutation.mutate()} disabled={addMutation.isPending}>
+            Criar Bar
+          </Button>
+        </div>
+      </Card>
+    </Card>
+  );
+}
+
+function cn(...inputs: any[]) {
+  return inputs.filter(Boolean).join(" ");
 }
 
 const MapPin = ({ className }: { className?: string }) => (
