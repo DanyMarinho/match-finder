@@ -32,6 +32,7 @@ import { CouponDialog } from "./CouponDialog";
 import { StatusOverlay } from "./StatusOverlay";
 import { useAttendance } from "@/hooks/use-attendance";
 import { useLiveConfirmations } from "@/hooks/use-live-confirmations";
+import { useVenues } from "@/hooks/use-venues";
 import { ALERT_LABELS } from "@/hooks/use-alerts";
 import type { ActiveAlert } from "@/data/venues";
 import { formatVerified } from "@/lib/format-verified";
@@ -58,6 +59,7 @@ export function VenueDetailsSheet({
 }: Props) {
   const attendance = useAttendance();
   const live = useLiveConfirmations();
+  const { checkIn } = useVenues();
   const [claimOpen, setClaimOpen] = useState(false);
   const [couponOpen, setCouponOpen] = useState(false);
 
@@ -113,7 +115,9 @@ export function VenueDetailsSheet({
                 confirmed={live.hasConfirmed(venue.id)}
                 onConfirm={() => {
                   const ok = live.confirm(venue.id);
-                  if (ok) toast.success("Check-in feito! A comunidade agradece.");
+                  if (ok) {
+                    checkIn(venue.id);
+                  }
                 }}
               />
             )}
