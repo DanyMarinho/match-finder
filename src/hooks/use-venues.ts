@@ -18,7 +18,7 @@ export function useVenues() {
       
       if (error) throw error;
       
-      return data.map((v: any) => ({
+      return (data || []).map((v: any) => ({
         ...v,
         coords: v.coords as [number, number],
         broadcastPackages: v.broadcast_packages || [],
