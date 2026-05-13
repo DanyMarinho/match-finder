@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
+import MarkerClusterGroup from "react-leaflet-cluster";
 import { type Venue } from "@/data/venues";
 import { Button } from "@/components/ui/button";
 import { LocateButton } from "./LocateButton";
@@ -108,50 +109,57 @@ export function VenueMap({
           subdomains="abcd"
         />
         <FlyTo venue={selected} />
-        {visible.map((v) => {
-          const alerts = alertsCountFor(v.id);
-          const critical = hasCriticalAlert(v.id);
-          const state: PinState =
-            selected?.id === v.id
-              ? "selected"
-              : critical
-                ? "alert-critical"
-                : alerts > 0
-                  ? "alert"
-                  : hoveredId === v.id
-                    ? "hovered"
-                    : "idle";
-          const next = v.matches[0];
-          return (
-            <Marker
-              key={`${v.id}-${state}`}
-              position={v.coords}
-              icon={buildPinIcon(state)}
-              eventHandlers={{
-                mouseover: () => onHover(v.id),
-                mouseout: () => onHover(null),
-              }}
-            >
-              <Popup>
-                <div className="space-y-2 p-1">
-                  <div className="font-semibold">{v.name}</div>
-                  {next && (
-                    <div className="text-xs opacity-80">
-                      {next.home} × {next.away}
-                    </div>
-                  )}
-                  <Button
-                    size="sm"
-                    onClick={() => onSelect(v.id)}
-                    className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
-                  >
-                    Ver detalhes
-                  </Button>
-                </div>
-              </Popup>
-            </Marker>
-          );
-        })}
+        <MarkerClusterGroup
+          chunkedLoading
+          maxClusterRadius={60}
+          spiderfyOnMaxZoom={true}
+          showCoverageOnHover={false}
+        >
+          {visible.map((v) => {
+            const alerts = alertsCountFor(v.id);
+            const critical = hasCriticalAlert(v.id);
+            const state: PinState =
+              selected?.id === v.id
+                ? "selected"
+                : critical
+                  ? "alert-critical"
+                  : alerts > 0
+                    ? "alert"
+                    : hoveredId === v.id
+                      ? "hovered"
+                      : "idle";
+            const next = v.matches[0];
+            return (
+              <Marker
+                key={`${v.id}-${state}`}
+                position={v.coords}
+                icon={buildPinIcon(state)}
+                eventHandlers={{
+                  mouseover: () => onHover(v.id),
+                  mouseout: () => onHover(null),
+                }}
+              >
+                <Popup>
+                  <div className="space-y-2 p-1">
+                    <div className="font-semibold">{v.name}</div>
+                    {next && (
+                      <div className="text-xs opacity-80">
+                        {next.home} × {next.away}
+                      </div>
+                    )}
+                    <Button
+                      size="sm"
+                      onClick={() => onSelect(v.id)}
+                      className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+                    >
+                      Ver detalhes
+                    </Button>
+                  </div>
+                </Popup>
+              </Marker>
+            );
+          })}
+        </MarkerClusterGroup>
         {userCoords && (
           <Marker
             position={userCoords}
