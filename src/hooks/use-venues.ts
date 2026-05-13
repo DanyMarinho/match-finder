@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Venue, ActiveAlert } from "@/data/venues";
 import { toast } from "sonner";
@@ -27,6 +28,37 @@ export function useVenues() {
       })) as Venue[];
     },
   });
+
+  // Real-time sync
+  useEffect(() => {
+    const channel = supabase
+      .channel("venues_realtime")
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "venues",
+        },
+        (payload) => {
+          console.log("Real-time update:", payload);
+          // Invalidate query to refetch or manually update cache
+          queryClient.setQueryData(["venues"], (old: Venue[] | undefined) => {
+            if (!old) return old;
+            return old.map(v => v.id === payload.new.id ? {
+              ...v,
+              liveConfirmations: payload.new.live_confirmations,
+              operationalStatus: payload.new.operational_status,
+            } : v);
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
   const checkInMutation = useMutation({
     mutationFn: async (venueId: string) => {
