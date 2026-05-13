@@ -132,6 +132,10 @@ function AdminDashboard() {
               <ExternalLink className="h-4 w-4 mr-2" />
               Ver Site
             </Button>
+            <Button onClick={() => setAddDialogOpen(true)} className="bg-primary text-primary-foreground">
+              <Plus className="h-4 w-4 mr-2" />
+              Novo Bar
+            </Button>
             <Button onClick={() => supabase.auth.signOut().then(() => navigate({ to: "/" }))} variant="destructive">
               Sair
             </Button>
