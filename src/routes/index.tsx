@@ -21,6 +21,7 @@ import { RegisterBarDialog } from "@/components/matchmap/RegisterBarDialog";
 import { SuggestVenueDialog } from "@/components/matchmap/SuggestVenueDialog";
 import { MobileDrawer } from "@/components/matchmap/MobileDrawer";
 import { AuthDialog } from "@/components/auth/AuthDialog";
+import { RankingBoard } from "@/components/matchmap/RankingBoard";
 import { useVenueFilters } from "@/hooks/use-venue-filters";
 import { useAttendance } from "@/hooks/use-attendance";
 import { useLiveConfirmations } from "@/hooks/use-live-confirmations";
@@ -29,7 +30,7 @@ import { useUserLocation } from "@/hooks/use-user-location";
 import { useVenues } from "@/hooks/use-venues";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Navigation, User } from "lucide-react";
+import { Navigation, User, Trophy, Map as MapIcon } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   component: Dashboard,
@@ -83,24 +84,27 @@ function Dashboard() {
   const [registerOpen, setRegisterOpen] = useState(false);
   const [suggestOpen, setSuggestOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
+  const [showRanking, setShowRanking] = useState(false);
 
   // Sync user coords to filters
   useEffect(() => {
     if (userLoc.state.status === "ready") {
       f.setUserCoords(userLoc.state.coords);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userLoc.state]);
 
   // Deep link ?bar=
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const id = new URLSearchParams(window.location.search).get("bar");
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get("bar");
+    const rank = params.get("ranking");
+    
     if (id) {
       f.setSelectedId(id);
       setSheetOpen(true);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (rank === "true") setShowRanking(true);
   }, []);
 
   const handleSelect = (id: string) => {
@@ -123,21 +127,48 @@ function Dashboard() {
 
   const filtersBlock = (
     <div className="space-y-4">
-      <FilterChips active={f.active} onToggle={f.toggle} onClear={f.clear} />
-      <CompetitionChips active={f.competitions} onToggle={f.toggleCompetition} />
-      <Button
-        variant={f.sortByDistance ? "default" : "secondary"}
-        size="sm"
-        onClick={handleNearMe}
-        className="w-full gap-2"
-      >
-        <Navigation className="h-4 w-4" />
-        {f.sortByDistance ? "Ordenado por distância" : "Perto de mim"}
-      </Button>
+      <div className="flex gap-2">
+        <Button
+          variant={!showRanking ? "default" : "outline"}
+          size="sm"
+          className="flex-1 gap-2"
+          onClick={() => setShowRanking(false)}
+        >
+          <MapIcon className="h-4 w-4" />
+          Mapa
+        </Button>
+        <Button
+          variant={showRanking ? "default" : "outline"}
+          size="sm"
+          className="flex-1 gap-2"
+          onClick={() => setShowRanking(true)}
+        >
+          <Trophy className="h-4 w-4 text-amber-500" />
+          Ranking
+        </Button>
+      </div>
+      
+      {!showRanking && (
+        <>
+          <FilterChips active={f.active} onToggle={f.toggle} onClear={f.clear} />
+          <CompetitionChips active={f.competitions} onToggle={f.toggleCompetition} />
+          <Button
+            variant={f.sortByDistance ? "default" : "secondary"}
+            size="sm"
+            onClick={handleNearMe}
+            className="w-full gap-2"
+          >
+            <Navigation className="h-4 w-4" />
+            {f.sortByDistance ? "Ordenado por distância" : "Perto de mim"}
+          </Button>
+        </>
+      )}
     </div>
   );
 
-  const listBlock = (
+  const listBlock = showRanking ? (
+    <RankingBoard venues={venues} onSelect={handleSelect} />
+  ) : (
     <VenueList
       venues={f.filtered}
       selectedId={f.selectedId}
