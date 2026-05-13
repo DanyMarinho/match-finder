@@ -21,6 +21,7 @@ import { RegisterBarDialog } from "@/components/matchmap/RegisterBarDialog";
 import { SuggestVenueDialog } from "@/components/matchmap/SuggestVenueDialog";
 import { MobileDrawer } from "@/components/matchmap/MobileDrawer";
 import { AuthDialog } from "@/components/auth/AuthDialog";
+import { RankingBoard } from "@/components/matchmap/RankingBoard";
 import { useVenueFilters } from "@/hooks/use-venue-filters";
 import { useAttendance } from "@/hooks/use-attendance";
 import { useLiveConfirmations } from "@/hooks/use-live-confirmations";
@@ -29,7 +30,7 @@ import { useUserLocation } from "@/hooks/use-user-location";
 import { useVenues } from "@/hooks/use-venues";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Navigation, User } from "lucide-react";
+import { Navigation, User, Trophy, Map as MapIcon } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   component: Dashboard,
