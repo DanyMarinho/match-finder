@@ -20,7 +20,7 @@ export function useVenues() {
       return data.map((v: any) => ({
         ...v,
         coords: v.coords as [number, number],
-        broadcastPackages: v.broadcast_packages,
+        broadcastPackages: v.broadcast_packages || [],
         lastVerified: v.last_verified,
         operationalStatus: v.operational_status,
         activeAlerts: [], 
