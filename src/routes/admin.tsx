@@ -278,6 +278,7 @@ function AdminDashboard() {
             </div>
           </TabsContent>
         </Tabs>
+      </div>
       <AddVenueDialog open={addDialogOpen} onOpenChange={setAddDialogOpen} />
     </div>
   );
