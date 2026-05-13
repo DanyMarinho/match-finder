@@ -8,9 +8,9 @@ import { VenueList } from "@/components/matchmap/VenueList";
 import { VenueDetailsSheet } from "@/components/matchmap/VenueDetailsSheet";
 
 // Leaflet acessa `window` em escopo de módulo — carregar somente no client.
-const VenueMap = typeof window !== "undefined"
-  ? lazy(() => import("@/components/matchmap/VenueMap").then((m) => ({ default: m.VenueMap })))
-  : () => null;
+const VenueMap = lazy(() =>
+  import("@/components/matchmap/VenueMap").then((m) => ({ default: m.VenueMap })),
+);
 
 const MapFallback = () => (
   <div className="flex h-full w-full animate-pulse items-center justify-center bg-slate-900 text-sm text-slate-400">
