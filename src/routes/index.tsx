@@ -206,6 +206,8 @@ function Dashboard() {
         </div>
       )}
 
+      {/* Se houver erro persistente, mostra um aviso (ou o TanStack Router tratará via errorComponent) */}
+
       {/* Desktop split */}
       <div className="hidden flex-1 overflow-hidden md:flex">
         <aside className="flex w-2/5 max-w-[480px] flex-col border-r border-border bg-sidebar">
