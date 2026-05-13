@@ -44,7 +44,14 @@ export function useVenueFilters(venues: Venue[]) {
   const filtered: Venue[] = useMemo(() => {
     const q = query.trim().toLowerCase();
     let list = allVenues.filter((v) => {
-      for (const a of active) if (!v.amenities.includes(a)) return false;
+      // Filtro especial "BOMBANDO" (popularidade instantânea)
+      if (active.has("🔥 BOMBANDO" as any) && v.liveConfirmations < 5) return false;
+
+      for (const a of active) {
+        if (a === ("🔥 BOMBANDO" as any)) continue;
+        if (!v.amenities.includes(a)) return false;
+      }
+      
       if (competitions.size > 0) {
         const matches = v.matches.some((m) => competitions.has(m.competition));
         if (!matches) return false;
@@ -73,8 +80,8 @@ export function useVenueFilters(venues: Venue[]) {
     } else {
       // Popularidade: confirmações ao vivo + votos em alertas + rating sobem o ranking.
       const popularity = (v: Venue) => {
-        const alertVotes = v.activeAlerts.reduce((s, a) => s + a.votes, 0);
-        return v.liveConfirmations * 3 + alertVotes + v.rating * 2;
+        const alertVotes = v.activeAlerts?.reduce((s, a) => s + (a.votes || 0), 0) || 0;
+        return (v.liveConfirmations || 0) * 3 + alertVotes + (v.rating || 0) * 2;
       };
       list = [...list].sort((a, b) => {
         if (a.suggested && !b.suggested) return 1;
