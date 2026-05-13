@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { ALL_AMENITIES, AMENITY_META, type Amenity } from "@/data/venues";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
+import { useVenues } from "@/hooks/use-venues";
 
 interface Props {
   open: boolean;
@@ -21,6 +21,7 @@ interface Props {
 }
 
 export function RegisterBarDialog({ open, onOpenChange }: Props) {
+  const { register } = useVenues();
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
   const [phone, setPhone] = useState("");
@@ -37,9 +38,15 @@ export function RegisterBarDialog({ open, onOpenChange }: Props) {
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !address) return;
-    toast.success("Cadastro enviado!", {
-      description: `${name} entrará em análise nas próximas 24h.`,
+    
+    register({
+      name,
+      address,
+      phone,
+      notes,
+      amenities
     });
+    
     setName("");
     setAddress("");
     setPhone("");
