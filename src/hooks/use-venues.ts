@@ -29,8 +29,9 @@ export function useVenues() {
   });
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
     const channel = supabase
-      .channel(`venues_realtime_${Math.random().toString(36).slice(2)}`)
+      .channel(`v_${Math.random().toString(36).slice(2, 7)}`)
       .on(
         "postgres_changes",
         {
@@ -53,7 +54,7 @@ export function useVenues() {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      channel.unsubscribe();
     };
   }, [queryClient]);
 
