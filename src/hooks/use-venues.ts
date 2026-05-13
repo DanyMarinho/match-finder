@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import type { Venue, ActiveAlert } from "@/data/venues";
+import type { Venue } from "@/data/venues";
 import { toast } from "sonner";
 
 export function useVenues() {
@@ -17,19 +17,17 @@ export function useVenues() {
       
       if (error) throw error;
       
-      // Transform back to Venue type
       return data.map((v: any) => ({
         ...v,
         coords: v.coords as [number, number],
         broadcastPackages: v.broadcast_packages,
         lastVerified: v.last_verified,
         operationalStatus: v.operational_status,
-        activeAlerts: [], // We'll fetch alerts separately or join
+        activeAlerts: [], 
       })) as Venue[];
     },
   });
 
-  // Real-time sync
   useEffect(() => {
     const channel = supabase
       .channel("venues_realtime")
@@ -41,14 +39,13 @@ export function useVenues() {
           table: "venues",
         },
         (payload) => {
-          console.log("Real-time update:", payload);
-          // Invalidate query to refetch or manually update cache
           queryClient.setQueryData(["venues"], (old: Venue[] | undefined) => {
             if (!old) return old;
             return old.map(v => v.id === payload.new.id ? {
               ...v,
               liveConfirmations: payload.new.live_confirmations,
               operationalStatus: payload.new.operational_status,
+              matches: payload.new.matches,
             } : v);
           });
         }
@@ -62,19 +59,44 @@ export function useVenues() {
 
   const checkInMutation = useMutation({
     mutationFn: async (venueId: string) => {
-      const { error } = await supabase.rpc("increment_live_confirmations", {
+      const { error: rpcError } = await supabase.rpc("increment_live_confirmations", {
         venue_id: venueId,
       });
-      if (error) throw error;
+      
+      if (rpcError) {
+        const { data: current } = await supabase.from("venues").select("live_confirmations").eq("id", venueId).single();
+        await supabase.from("venues").update({ live_confirmations: (current?.live_confirmations || 0) + 1 }).eq("id", venueId);
+      }
       
       await supabase.from("check_ins").insert({ venue_id: venueId });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["venues"] });
-      toast.success("Presença confirmada!");
+      toast.success("Sinal confirmado com sucesso!");
     },
     onError: (err: any) => {
       toast.error("Erro ao confirmar presença: " + err.message);
+    },
+  });
+
+  const registerMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const { error } = await supabase.from("registrations").insert({
+        name: data.name,
+        address: data.address,
+        phone: data.phone,
+        amenities: Array.from(data.amenities || []),
+        notes: data.notes
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Cadastro enviado!", {
+        description: "Seu bar entrará em análise nas próximas 24h.",
+      });
+    },
+    onError: (err: any) => {
+      toast.error("Erro ao enviar cadastro: " + err.message);
     },
   });
 
@@ -82,5 +104,6 @@ export function useVenues() {
     venues,
     isLoading,
     checkIn: checkInMutation.mutate,
+    register: registerMutation.mutate,
   };
 }
