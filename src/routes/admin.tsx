@@ -26,6 +26,7 @@ export const Route = createFileRoute("/admin")({
 function AdminDashboard() {
   const [session, setSession] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
